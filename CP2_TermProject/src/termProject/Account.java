@@ -1,6 +1,7 @@
 package termProject;
 import java.util.*;
-public abstract class Account {
+import java.io.Serializable;
+public abstract class Account implements Serializable {
 	protected Customer owner; //소유 고객
 	protected String accountNumber; //계좌번호
 	protected String accountType; //계좌 유형

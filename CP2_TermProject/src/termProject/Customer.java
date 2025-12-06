@@ -1,6 +1,7 @@
 package termProject;
 import java.util.*;
-public class Customer {
+import java.io.Serializable;
+public class Customer implements Serializable {
 	private String name; //고객 이름
 	private String customerId; //고객 아이디
 	private String password; //비밀번호(은행 로그인용)
