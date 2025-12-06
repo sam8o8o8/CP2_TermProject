@@ -2,7 +2,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-
 public class BankServer {
     List<Customer> customerList;
     List<Account> accountList;
@@ -67,7 +66,7 @@ public class BankServer {
         	try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
         		accountList = (ArrayList<Account>) in.readObject();
         		for (Account acc : accountList) {
-        			Customer owner = findCustomer(acc.getOwner());
+        			Customer owner = acc.getOwner();
         			if (owner != null) {
         				owner.addAccount(acc);
         			}
@@ -92,7 +91,7 @@ public class BankServer {
         }
         
         for (Customer customer : customerList) {
-            if (customer.getCustomerID().equals(userID) && customer.getPassword().equals(password)) {
+            if (customer.getCustomerId().equals(userID) && customer.getPassword().equals(password)) {
                 return "CUSTOMER";
             }
         }
@@ -135,7 +134,7 @@ public class BankServer {
     public synchronized Customer findCustomer(String customerID) {
         Customer result = null;
         for (Customer c : customerList) {
-            if (c.getCustomerID().equals(customerID)) {
+            if (c.getCustomerId().equals(customerID)) {
                 result = c;
                 break;
             }
@@ -144,7 +143,7 @@ public class BankServer {
     }
     
     // 계좌추가
-    public synchronized boolean addAccount(String customerID, String accountNumber, String accountType, double initialBalance, double param1, double param2) {
+    public synchronized boolean addAccount(String customerID, String accountNumber, String accountType, String password,  double interestRate, double maxTransferAmountToChecking, Date maturityDate) {
         Customer customer = findCustomer(customerID);
         if (customer == null || findAccount(accountNumber) != null) {
             return false;
@@ -153,9 +152,9 @@ public class BankServer {
         Account account = null;
         
         if (accountType.equals("Checking")) {
-            account = new CheckingAccount(customerID, accountNumber, initialBalance);
+            account = new CheckingAccount(customer, accountNumber, password);
         } else if (accountType.equals("Savings")) {
-            account = new SavingsAccount(customerID, accountNumber, initialBalance, param1, param2);
+            account = new SavingsAccount(customer, accountNumber, password, interestRate, maxTransferAmountToChecking, maturityDate);
         }
         
         accountList.add(account);
@@ -171,9 +170,9 @@ public class BankServer {
             return false;
         }
         
-        Customer customer = findCustomer(account.getOwner());
+        Customer customer = account.getOwner();
         if (customer != null) {
-            customer.removeAccount(accountNumber);
+        	customer.removeAccount(account);
         }
         
         accountList.remove(account);
@@ -203,19 +202,19 @@ public class BankServer {
     }
     
     // 입금
-    public synchronized void deposit(String accountNumber, double amount) {
+    public synchronized void credit(String accountNumber, double amount) {
     	Account account = findAccount(accountNumber);
     	if(account != null) {
-    		account.credit(amount);
+    		account.deposit(amount);
     		save();
     	}
     }
     
     
     // 출금
-    public synchronized boolean withdraw(String accountNumber, double amount) {
+    public synchronized boolean debit(String accountNumber,String inputPassword, double amount) {
     	Account account = findAccount(accountNumber);
-    	boolean success = account.debit(amount); 
+    	boolean success = account.withdraw(amount, inputPassword); 
         	if (success) {
             save();
             return true;
@@ -223,7 +222,7 @@ public class BankServer {
     }
     
     // 계좌이체
-    public synchronized boolean transfer(String fromAccountNumber, String toAccountNumber, double amount) {
+    public synchronized boolean transfer(String fromAccountNumber, String toAccountNumber, String inputPassword, double amount) {
         Account fromAccount = findAccount(fromAccountNumber);
         Account toAccount = findAccount(toAccountNumber);
         
@@ -231,8 +230,8 @@ public class BankServer {
             return false;
         }
         
-        if (fromAccount.debit(amount)) {
-            toAccount.credit(amount);
+        if (fromAccount.withdraw(amount, inputPassword)) {
+            toAccount.deposit(amount);
             save();
             return true;
         }
@@ -245,7 +244,7 @@ public class BankServer {
         StringBuilder sb = new StringBuilder();
         for (Customer customer : customerList) {
             sb.append("고객이름: ").append(customer.getName())
-              .append(", 고객아이디: ").append(customer.getCustomerID())
+              .append(", 고객아이디: ").append(customer.getCustomerId())
               .append(", 고객주소: ").append(customer.getAddress())
               .append(", 연락처: ").append(customer.getPhone())
               .append(", 계좌개수: ").append(customer.getNumberOfAccounts())
@@ -352,16 +351,17 @@ class ClientHandler implements Runnable {
                     Customer customer = server.findCustomer(parts[1]);
                     return customer != null ? "SUCCESS|" + customer.toString() : "FAIL";
                     
-                // 계좌 추가 : ADD_ACCOUNT|customerID|accountNumber|accountType|initialBalance|param1|param2
+                // 계좌 추가 : ADD_ACCOUNT|customerID|accountNumber|accountType|password|interestRate|maxTransferAmountToChecking|maturityDate
                 case "ADD_ACCOUNT":
                 	String customerID = parts[1];
                    	String accountNumber = parts[2];
                    	String accountType = parts[3];
-                   	double initialBalance = Double.parseDouble(parts[4]);
-                   	double param1 = Double.parseDouble(parts[5]);
-                   	double param2 = Double.parseDouble(parts[6]);
+                   	String password = parts[4];
+                   	double interestRate = Double.parseDouble(parts[5]);
+                   	double maxTransferAmountToChecking = Double.parseDouble(parts[6]);
+                   	Date maturityDate = parts[7];
                         
-                   	boolean success3 = server.addAccount(customerID, accountNumber, accountType, initialBalance, param1, param2);
+                   	boolean success3 = server.addAccount(customerID, accountNumber, accountType, password, interestRate, maxTransferAmountToChecking, maturityDate);
                    	return success3 ? "SUCCESS" : "FAIL";
                     
                 // 계좌 삭제 : DELETE_ACCOUNT|accountNumber
@@ -379,22 +379,22 @@ class ClientHandler implements Runnable {
                     double balance = server.findbalance(parts[1]);
                     return balance != -1 ? "SUCCESS|" + balance : "FAIL";
                     
-                // 입금 : DEPOSIT|accountNumber|amount
-                case "DEPOSIT":
+                // 입금 : CREDIT|accountNumber|amount
+                case "CREDIT":
                     double amount1 = Double.parseDouble(parts[2]);
-                    server.deposit(parts[1], amount1);
+                    server.credit(parts[1], amount1);
                     return "SUCCESS";
                     
-                // 출금 :  WITHDRAW|accountNumber|amount
-                case "WITHDRAW": 
-                    double amount2 = Double.parseDouble(parts[2]);
-                    boolean success5 = server.withdraw(parts[1], amount2);
+                // 출금 :  DEBIT|accountNumber|inputPassword|amount
+                case "DEBIT": 
+                    double amount2 = Double.parseDouble(parts[3]);
+                    boolean success5 = server.debit(parts[1], parts[2], amount2);
                     return success5 ? "SUCCESS" : "FAIL";
                     
-                // 계좌 이체 : TRANSFER|fromAccount|toAccount|amount
+                // 계좌 이체 : TRANSFER|fromAccountNumbe|toAccountNumbe|inputPassword|amount
                 case "TRANSFER":
-                    double amount = Double.parseDouble(parts[3]);
-                    boolean success6 = server.transfer(parts[1], parts[2], amount);
+                    double amount = Double.parseDouble(parts[4]);
+                    boolean success6 = server.transfer(parts[1], parts[2], parts[3],amount);
                     return success6 ? "SUCCESS" : "FAIL";
                     
                 // 모든 고객 정보 출력
@@ -418,6 +418,11 @@ class ClientHandler implements Runnable {
             }
     }
 }
+
+
+
+
+
 
 
 
