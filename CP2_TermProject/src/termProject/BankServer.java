@@ -143,22 +143,22 @@ public class BankServer {
     }
     
     // 계좌추가
-    public synchronized boolean addAccount(String customerID, String accountNumber, String accountType, String password,  double interestRate, double maxTransferAmountToChecking, Date maturityDate) {
-        Customer customer = findCustomer(customerID);
-        if (customer == null || findAccount(accountNumber) != null) {
+    public synchronized boolean addAccount(String customerID, String accountNumber, String accountType, String password,  double interestRate, double maxTransferAmountToChecking) {
+        Customer owner = findCustomer(customerID);
+        if (owner == null || findAccount(accountNumber) != null) {
             return false;
         }
         
         Account account = null;
         
         if (accountType.equals("Checking")) {
-            account = new CheckingAccount(customer, accountNumber, password);
+            account = new CheckingAccount(owner, accountNumber, password);
         } else if (accountType.equals("Savings")) {
-            account = new SavingsAccount(customer, accountNumber, password, interestRate, maxTransferAmountToChecking, maturityDate);
+            account = new SavingsAccount(owner, accountNumber, password, interestRate, maxTransferAmountToChecking);
         }
         
         accountList.add(account);
-        customer.addAccount(account);
+        owner.addAccount(account);
         save();
         return true;
     }
@@ -351,7 +351,7 @@ class ClientHandler implements Runnable {
                     Customer customer = server.findCustomer(parts[1]);
                     return customer != null ? "SUCCESS|" + customer.toString() : "FAIL";
                     
-                // 계좌 추가 : ADD_ACCOUNT|customerID|accountNumber|accountType|password|interestRate|maxTransferAmountToChecking|maturityDate
+                // 계좌 추가 : ADD_ACCOUNT|customerID|accountNumber|accountType|password|interestRate|maxTransferAmountToChecking
                 case "ADD_ACCOUNT":
                 	String customerID = parts[1];
                    	String accountNumber = parts[2];
@@ -359,9 +359,8 @@ class ClientHandler implements Runnable {
                    	String password = parts[4];
                    	double interestRate = Double.parseDouble(parts[5]);
                    	double maxTransferAmountToChecking = Double.parseDouble(parts[6]);
-                   	Date maturityDate = parts[7];
-                        
-                   	boolean success3 = server.addAccount(customerID, accountNumber, accountType, password, interestRate, maxTransferAmountToChecking, maturityDate);
+                   	    
+                   	boolean success3 = server.addAccount(customerID, accountNumber, accountType, password, interestRate, maxTransferAmountToChecking);
                    	return success3 ? "SUCCESS" : "FAIL";
                     
                 // 계좌 삭제 : DELETE_ACCOUNT|accountNumber
@@ -418,11 +417,6 @@ class ClientHandler implements Runnable {
             }
     }
 }
-
-
-
-
-
 
 
 
