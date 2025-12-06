@@ -56,6 +56,11 @@ public abstract class Account {
 		return availableBalance;
 	}
 	
+	//일부 계좌 속성에 대한 값 반환 - 계좌 유형
+	public String getAccountType() {
+		return accountType;
+	}
+	
 	//입금(Credit)
 	public void deposit(double amount) {
 		totalBalance += amount;
