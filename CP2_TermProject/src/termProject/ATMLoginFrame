@@ -1,0 +1,148 @@
+package termProject;
+import javax.swing.*;
+import java.awt.*;
+import java.io.IOException;
+import GUI.*;
+
+
+public class ATMLoginFrame extends JFrame {
+
+    private JTextField idField;
+    private JPasswordField pwField;
+    private JLabel messageLabel;
+
+    private BankClient bankClient;
+
+    public ATMLoginFrame() {
+        setTitle("ATM Login");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(350, 200);
+        setLocationRelativeTo(null); // 화면 중앙
+
+        // BankClient 생성 (서버 연결)
+        try {
+            bankClient = new BankClient();
+        } catch (IOException e) {
+            // 서버에 연결 실패한 경우
+            JOptionPane.showMessageDialog(
+                    this,
+                    "서버에 연결할 수 없습니다.\n먼저 BankServer를 실행했는지 확인하세요.",
+                    "연결 오류",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+
+        initComponents();
+        setVisible(true);
+    }
+
+    private void initComponents() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5,5,5,5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JLabel idLabel = new JLabel("ID:");
+        JLabel pwLabel = new JLabel("Password:");
+
+        idField = new JTextField(15);
+        pwField = new JPasswordField(15);
+
+        JButton loginButton = new JButton("Login");
+        messageLabel = new JLabel(" ");  // 메시지 표시용 (처음엔 공백)
+
+        // ID 라벨
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(idLabel, gbc);
+
+        // ID 입력창
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        panel.add(idField, gbc);
+
+        // PW 라벨
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        panel.add(pwLabel, gbc);
+
+        // PW 입력창
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        panel.add(pwField, gbc);
+
+        // 로그인 버튼
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        panel.add(loginButton, gbc);
+
+        // 메시지 라벨
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 2;
+        panel.add(messageLabel, gbc);
+
+        add(panel);
+
+        // 버튼 클릭 시 동작
+        loginButton.addActionListener(e -> onLogin());
+    }
+
+    private void onLogin() {
+        String id = idField.getText().trim();
+        String pw = new String(pwField.getPassword());
+
+        if (id.isEmpty() || pw.isEmpty()) {
+            messageLabel.setText("ID와 비밀번호를 입력하세요.");
+            return;
+        }
+
+        if (bankClient == null) {
+            messageLabel.setText("서버 연결이 없습니다.");
+            return;
+        }
+
+        try {
+            String result = bankClient.authenticateUser(id, pw);
+
+            if ("CUSTOMER".equals(result)) {
+                messageLabel.setText("고객 로그인 성공!");
+
+                // 고객용 ATM GUI 띄우기
+                SwingUtilities.invokeLater(() -> {
+      
+                    new ATMClientGUI("localhost", 6000);
+                });
+
+                // 로그인 창 닫기
+                dispose();
+
+            } else if ("MANAGER".equals(result)) {
+                messageLabel.setText("관리자 로그인 성공!");
+
+                // 관리자용 GUI 띄우기
+                SwingUtilities.invokeLater(() -> {
+                    new BankManagerGUI();
+                });
+
+                // 로그인 창 닫기
+                dispose();
+
+            } else {
+                messageLabel.setText("로그인 실패: ID 또는 비밀번호 오류");
+            }
+
+        } catch (IOException ex) {
+            messageLabel.setText("서버 통신 오류");
+            ex.printStackTrace();
+        }
+    }
+
+
+    // 프로그램 시작점
+    public static void main(String[] args) {
+    	 javax.swing.SwingUtilities.invokeLater(() -> new ATMLoginFrame());
+    }
+}
