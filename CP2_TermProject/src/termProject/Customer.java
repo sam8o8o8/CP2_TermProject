@@ -29,6 +29,11 @@ public class Customer {
 		System.out.println("비밀번호가 변경되었습니다.");
 		return true;
 	}
+	
+	//일부 고객 속성에 대한 값 반환 - 소유한 계좌 목록
+	public List<Account> getAccountList() {
+		return accounts;
+	}
 		
 	//특정 소유 계좌의 발견
 	public Account findAccount(String accountNumber) {

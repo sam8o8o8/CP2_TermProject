@@ -36,6 +36,11 @@ public abstract class Account {
 		return true;
 	}
 	
+	//일부 계좌 속성에 대한 값 반환 - 소유 고객
+	public Customer getOwner() {
+		return owner;
+	}
+	
 	//일부 계좌 속성에 대한 값 반환 - 계좌번호
 	public String getAccountNumber() {
 		return accountNumber;
