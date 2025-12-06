@@ -86,5 +86,5 @@ public abstract class Account {
 	}
 	
 	//예금 계좌 종류 따라 자식클래스에서 재정의
-	public abstract void display();
+	public abstract String display();
 }

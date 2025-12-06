@@ -31,7 +31,7 @@ public class CheckingAccount extends Account {
 			double shortage = amount - availableBalance; //모자란 금액 계산
 			if (shortage <= linkedSavings.getMaxTransferAmountToChecking() && linkedSavings.automaticWithdrawal(shortage)) { //자동이체 메서드 호출
 				deposit(shortage);
-				return withdraw(amount, inputPassword); //연결된 저축예금계좌로부터 자동이체한도 내에서 모자란 만큼 자동이체
+				return super.withdraw(amount, inputPassword); //연결된 저축예금계좌로부터 자동이체한도 내에서 모자란 만큼 자동이체
 			}
 			return false;
 		} else {
@@ -41,7 +41,7 @@ public class CheckingAccount extends Account {
 	}
 	
 	@Override
-	public void display() { //계좌 정보 출력
-		System.out.println("[당좌예금계좌] 계좌번호: " + accountNumber + " 잔액: " + totalBalance);
+	public String display() { //계좌 정보 출력
+		return "[당좌예금계좌] 계좌번호: " + accountNumber + " 잔액: " + totalBalance;
 	}
 }

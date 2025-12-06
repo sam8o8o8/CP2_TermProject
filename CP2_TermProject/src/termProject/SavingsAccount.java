@@ -7,11 +7,20 @@ public class SavingsAccount extends Account {
 	private Date maturityDate; //만기일
 	
 	//생성자
-	public SavingsAccount(Customer owner, String accountNumber, String password, double interestRate, double maxTransferAmountToChecking, Date maturityDate) {
+	public SavingsAccount(Customer owner, String accountNumber, String password, double interestRate, double maxTransferAmountToChecking) {
 		super(owner, accountNumber, "Savings", password);
 		this.interestRate = interestRate;
 		this.maxTransferAmountToChecking = maxTransferAmountToChecking;
+	}
+	
+	//일부 계좌 속성에 대한 값 설정 - 만기일
+	public void setMaturityDate(Date maturityDate) {
 		this.maturityDate = maturityDate;
+	}
+	
+	//일부 계좌 속성에 대한 값 반환 - 만기일
+	public Date getMaturityDate() {
+		return maturityDate;
 	}
 	
 	//일부 계좌 속성에 대한 값 반환 - 당좌예금계좌에 자동이체 될 수 있는 최대 금액
@@ -32,7 +41,7 @@ public class SavingsAccount extends Account {
 		}
 		
 		Date today = new Date();
-		if (today.before(maturityDate)) {
+		if (today.before(getMaturityDate())) {
 			System.out.println("만기일 이전에는 직접 출금할 수 없습니다.");
 			return false;
 		}
@@ -59,7 +68,7 @@ public class SavingsAccount extends Account {
 	}
 	
 	@Override
-	public void display() { //계좌 정보 출력
-		System.out.println("[저축예금계좌] 계좌번호: " + accountNumber + " 잔액: " + totalBalance + " 이자율: " + interestRate);
+	public String display() { //계좌 정보 출력
+		return "[저축예금계좌] 계좌번호: " + accountNumber + " 잔액: " + totalBalance + " 이자율: " + interestRate;
 	}
 }
